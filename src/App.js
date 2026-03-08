@@ -143,7 +143,6 @@ export default function TaskTracker() {
     if (task) {
       const tomorrow = new Date(selectedDate);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = formatDateKey(tomorrow);
 
       if (!isCurrentlyLocked) {
         const updatedTasks = [...tasks];
@@ -285,7 +284,7 @@ export default function TaskTracker() {
 
     setCurrentStreak(current);
     setLongestStreak(longest);
-  }, [tasks, completedDates, dayTasks, dayTaskLocks]);
+  }, [tasks, completedDates, dayTasks, dayTaskLocks, getTasksForDate]);
 
   const downloadBackup = () => {
     const backup = {
