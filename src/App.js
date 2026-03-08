@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Lock, ChevronLeft, ChevronRight, Download, Upload, Moon, Sun } from 'lucide-react';
 
 export default function TaskTracker() {
@@ -54,7 +54,7 @@ export default function TaskTracker() {
     return `${year}-${month}-${day}`;
   };
 
-  const getTasksForDate = (date) => {
+  const getTasksForDate = useCallback((date) => {
     const dateStr = formatDateKey(date);
     const daySpecificTasks = dayTasks[dateStr] || [];
     const dayLocks = dayTaskLocks[dateStr] || {};
@@ -67,7 +67,7 @@ export default function TaskTracker() {
       }
       return null;
     }).filter(Boolean);
-  };
+  }, [tasks, dayTasks, dayTaskLocks]);
 
   const handleAddTask = () => {
     if (!taskInput.trim()) return;
