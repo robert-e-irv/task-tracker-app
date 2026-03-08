@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Lock, ChevronLeft, ChevronRight, Download, Upload, Moon, Sun, Mail } from 'lucide-react';
+import { onAuthStateChange, loginUser, registerUser, logoutUser, saveUserData, subscribeToUserData } from './firebase';
 
 export default function TaskTracker() {
   const [confetti, setConfetti] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    const saved = localStorage.getItem('isLoggedIn');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
@@ -17,6 +17,29 @@ export default function TaskTracker() {
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
+
+  // Check Firebase auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setIsLoggedIn(true);
+        // Subscribe to real-time data updates
+        subscribeToUserData(currentUser.uid, (data) => {
+          if (data) {
+            setTasks(data.tasks || []);
+            setCompletedDates(data.completedDates || {});
+            setDayTasks(data.dayTasks || []);
+            setDayTaskLocks(data.dayTaskLocks || {});
+          }
+        });
+      } else {
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const [tasks, setTasks] = useState([]);
   const [taskInput, setTaskInput] = useState('');
@@ -43,28 +66,54 @@ export default function TaskTracker() {
     }
   }, []);
 
+  // Save data to Firebase when it changes
   useEffect(() => {
-    localStorage.setItem('taskTrackerData', JSON.stringify({
-      tasks,
-      completedDates,
-      dayTasks,
-      dayTaskLocks,
-      lastBackup: new Date().toISOString()
-    }));
-  }, [tasks, completedDates, dayTasks, dayTaskLocks]);
+    if (user && isLoggedIn) {
+      saveUserData(user.uid, {
+        tasks,
+        completedDates,
+        dayTasks,
+        dayTaskLocks,
+        lastUpdated: new Date().toISOString()
+      });
+    } else {
+      // Fallback to localStorage if not logged in
+      localStorage.setItem('taskTrackerData', JSON.stringify({
+        tasks,
+        completedDates,
+        dayTasks,
+        dayTaskLocks,
+        lastBackup: new Date().toISOString()
+      }));
+    }
+  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username.trim()) {
-      setIsLoggedIn(true);
-      localStorage.setItem('isLoggedIn', JSON.stringify(true));
+    setAuthError('');
+    try {
+      await loginUser(username, password);
       setUsername('');
       setPassword('');
+    } catch (error) {
+      setAuthError(error.message);
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      await registerUser(username, password);
+      setUsername('');
+      setPassword('');
+    } catch (error) {
+      setAuthError(error.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
     setTasks([]);
     setCompletedDates({});
     setDayTasks({});
@@ -72,15 +121,10 @@ export default function TaskTracker() {
     setCurrentStreak(0);
     setLongestStreak(0);
     setSelectedDate(new Date());
-    localStorage.setItem('isLoggedIn', JSON.stringify(false));
     localStorage.removeItem('taskTrackerData');
   };
 
-  const handleGoogleLogin = () => {
-    // Placeholder for Google OAuth
-    setIsLoggedIn(true);
-    localStorage.setItem('isLoggedIn', JSON.stringify(true));
-  };
+  const [isRegister, setIsRegister] = useState(false);
 
   const formatDateKey = useCallback((date) => {
     const year = date.getFullYear();
@@ -470,14 +514,14 @@ export default function TaskTracker() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8">
           <h1 className="text-3xl font-bold text-gray-800 text-center mb-8">Task Tracker</h1>
           
-          <form onSubmit={handleLogin} className="space-y-4 mb-6">
+          <form onSubmit={isRegister ? handleRegister : handleLogin} className="space-y-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
-                type="text"
+                type="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter your email"
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -491,30 +535,27 @@ export default function TaskTracker() {
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
+            {authError && <p className="text-red-500 text-sm">{authError}</p>}
             <button
               type="submit"
               className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition"
             >
-              Login
+              {isRegister ? 'Create Account' : 'Login'}
             </button>
           </form>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg transition"
-          >
-            <Mail size={20} />
-            Login with Google
-          </button>
+          <p className="text-center text-sm text-gray-600">
+            {isRegister ? 'Already have an account? ' : "Don't have an account? "}
+            <button
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setAuthError('');
+              }}
+              className="text-blue-500 hover:text-blue-600 font-semibold"
+            >
+              {isRegister ? 'Login' : 'Sign up'}
+            </button>
+          </p>
         </div>
       </div>
     );
