@@ -79,21 +79,17 @@ export default function TaskTracker() {
     }
   }, []);
 
-  // Save data to Firebase when it changes (debounced)
+  // Save data to Firebase when it changes
   useEffect(() => {
     if (!user || !isLoggedIn) return;
 
-    const timer = setTimeout(() => {
-      saveUserData(user.uid, {
-        tasks,
-        completedDates,
-        dayTasks,
-        dayTaskLocks,
-        lastUpdated: new Date().toISOString()
-      });
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    saveUserData(user.uid, {
+      tasks,
+      completedDates,
+      dayTasks,
+      dayTaskLocks,
+      lastUpdated: new Date().toISOString()
+    });
   }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn]);
 
   const handleLogin = async (e) => {
