@@ -67,7 +67,7 @@ export default function TaskTracker() {
       }
       return null;
     }).filter(Boolean);
-  }, [tasks, dayTasks, dayTaskLocks]);
+  }, [formatDateKey, tasks, dayTasks, dayTaskLocks]);
 
   const handleAddTask = () => {
     if (!taskInput.trim()) return;
@@ -284,7 +284,7 @@ export default function TaskTracker() {
 
     setCurrentStreak(current);
     setLongestStreak(longest);
-  }, [tasks, completedDates, dayTasks, dayTaskLocks, getTasksForDate]);
+  }, [tasks, completedDates, dayTasks, dayTaskLocks, getTasksForDate, formatDateKey]);
 
   const downloadBackup = () => {
     const backup = {
