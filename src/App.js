@@ -23,6 +23,7 @@ export default function TaskTracker() {
     return saved ? JSON.parse(saved) : false;
   });
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRegister, setIsRegister] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
