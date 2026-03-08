@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Lock, ChevronLeft, ChevronRight, Download, Upload, Moon, Sun, Mail } from 'lucide-react';
+import { Plus, Trash2, Lock, ChevronLeft, ChevronRight, Download, Upload, Moon, Sun } from 'lucide-react';
 import { onAuthStateChange, loginUser, registerUser, logoutUser, saveUserData, subscribeToUserData } from './firebase';
 
 export default function TaskTracker() {
