@@ -82,21 +82,6 @@ export default function TaskTracker() {
     };
   }, []);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('taskTrackerData');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        setTasks(data.tasks || []);
-        setCompletedDates(data.completedDates || {});
-        setDayTasks(data.dayTasks || {});
-        setDayTaskLocks(data.dayTaskLocks || {});
-      } catch (e) {
-        console.log('Could not load data');
-      }
-    }
-  }, []);
-
   // Save data to Firebase when it changes
   useEffect(() => {
     if (!user || !isLoggedIn) return;
