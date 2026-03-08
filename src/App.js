@@ -94,7 +94,7 @@ export default function TaskTracker() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn];
+  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
