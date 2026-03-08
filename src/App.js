@@ -9,16 +9,26 @@ export default function TaskTracker() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [taskInput, setTaskInput] = useState('');
+  const [completedDates, setCompletedDates] = useState({});
+  const [dayTasks, setDayTasks] = useState({});
+  const [dayTaskLocks, setDayTaskLocks] = useState({});
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [backupMessage, setBackupMessage] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+  const [isRegister, setIsRegister] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Check Firebase auth state
+  // Check Firebase auth state and load data
   useEffect(() => {
     const unsubscribe = onAuthStateChange((currentUser) => {
       if (currentUser) {
@@ -29,7 +39,7 @@ export default function TaskTracker() {
           if (data) {
             setTasks(data.tasks || []);
             setCompletedDates(data.completedDates || {});
-            setDayTasks(data.dayTasks || []);
+            setDayTasks(data.dayTasks || {});
             setDayTaskLocks(data.dayTaskLocks || {});
           }
         });
@@ -40,16 +50,6 @@ export default function TaskTracker() {
     });
     return unsubscribe;
   }, []);
-
-  const [tasks, setTasks] = useState([]);
-  const [taskInput, setTaskInput] = useState('');
-  const [completedDates, setCompletedDates] = useState({});
-  const [dayTasks, setDayTasks] = useState({});
-  const [dayTaskLocks, setDayTaskLocks] = useState({});
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [longestStreak, setLongestStreak] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [backupMessage, setBackupMessage] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('taskTrackerData');
