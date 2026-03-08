@@ -80,17 +80,21 @@ export default function TaskTracker() {
     };
   }, []);
 
-  // Save data to Firebase when it changes (only after initial load)
+  // Save data to Firebase when it changes (debounced to 3 seconds)
   useEffect(() => {
     if (!user || !isLoggedIn || isInitialLoad) return;
 
-    saveUserData(user.uid, {
-      tasks,
-      completedDates,
-      dayTasks,
-      dayTaskLocks,
-      lastUpdated: new Date().toISOString()
-    });
+    const timer = setTimeout(() => {
+      saveUserData(user.uid, {
+        tasks,
+        completedDates,
+        dayTasks,
+        dayTaskLocks,
+        lastUpdated: new Date().toISOString()
+      });
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn, isInitialLoad]);
 
   const handleLogin = async (e) => {
