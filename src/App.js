@@ -22,15 +22,16 @@ export default function TaskTracker() {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
-  const [isRegister, setIsRegister] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Check Firebase auth state and load data
+  // Check Firebase auth state and load data once
   useEffect(() => {
     let unsubscribeListener = null;
+    let hasLoaded = false;
     
     const unsubscribeAuth = onAuthStateChange((currentUser) => {
       if (unsubscribeListener) {
@@ -40,23 +41,33 @@ export default function TaskTracker() {
       if (currentUser) {
         setUser(currentUser);
         setIsLoggedIn(true);
-        // Subscribe to real-time data updates - always update with what's in Firebase
+        
+        // Load data once from Firebase, then stop listening
         unsubscribeListener = subscribeToUserData(currentUser.uid, (data) => {
-          if (data) {
+          if (!hasLoaded && data) {
+            // Only load once on initial auth
             setTasks(data.tasks || []);
             setCompletedDates(data.completedDates || {});
             setDayTasks(data.dayTasks || {});
             setDayTaskLocks(data.dayTaskLocks || {});
+            setIsInitialLoad(false);
+            hasLoaded = true;
+            // Stop listening after initial load
+            if (unsubscribeListener) {
+              unsubscribeListener();
+              unsubscribeListener = null;
+            }
           }
         });
       } else {
         setUser(null);
         setIsLoggedIn(false);
-        // Clear data on logout
         setTasks([]);
         setCompletedDates({});
         setDayTasks({});
         setDayTaskLocks({});
+        setIsInitialLoad(true);
+        hasLoaded = false;
       }
     });
 
@@ -68,9 +79,9 @@ export default function TaskTracker() {
     };
   }, []);
 
-  // Save data to Firebase when it changes
+  // Save data to Firebase when it changes (only after initial load)
   useEffect(() => {
-    if (!user || !isLoggedIn) return;
+    if (!user || !isLoggedIn || isInitialLoad) return;
 
     saveUserData(user.uid, {
       tasks,
@@ -79,7 +90,7 @@ export default function TaskTracker() {
       dayTaskLocks,
       lastUpdated: new Date().toISOString()
     });
-  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn]);
+  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn, isInitialLoad]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
