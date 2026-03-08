@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Lock, ChevronLeft, ChevronRight, Download, Upload, Moon, Sun } from 'lucide-react';
+import { Plus, Trash2, Lock, ChevronLeft, ChevronRight, Download, Upload, Moon, Sun, Mail } from 'lucide-react';
 
 export default function TaskTracker() {
   const [confetti, setConfetti] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    const saved = localStorage.getItem('isLoggedIn');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
@@ -46,6 +52,35 @@ export default function TaskTracker() {
       lastBackup: new Date().toISOString()
     }));
   }, [tasks, completedDates, dayTasks, dayTaskLocks]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username.trim()) {
+      setIsLoggedIn(true);
+      localStorage.setItem('isLoggedIn', JSON.stringify(true));
+      setUsername('');
+      setPassword('');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setTasks([]);
+    setCompletedDates({});
+    setDayTasks({});
+    setDayTaskLocks({});
+    setCurrentStreak(0);
+    setLongestStreak(0);
+    setSelectedDate(new Date());
+    localStorage.setItem('isLoggedIn', JSON.stringify(false));
+    localStorage.removeItem('taskTrackerData');
+  };
+
+  const handleGoogleLogin = () => {
+    // Placeholder for Google OAuth
+    setIsLoggedIn(true);
+    localStorage.setItem('isLoggedIn', JSON.stringify(true));
+  };
 
   const formatDateKey = useCallback((date) => {
     const year = date.getFullYear();
@@ -429,6 +464,62 @@ export default function TaskTracker() {
   const validCompleted = completed.filter(id => tasksForDay.find(t => t.id === id));
   const progress = tasksForDay.length > 0 ? Math.round((validCompleted.length / tasksForDay.length) * 100) : 0;
 
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8">
+          <h1 className="text-3xl font-bold text-gray-800 text-center mb-8">Task Tracker</h1>
+          
+          <form onSubmit={handleLogin} className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition"
+            >
+              Login
+            </button>
+          </form>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg transition"
+          >
+            <Mail size={20} />
+            Login with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-slate-900 to-slate-800'} p-4 md:p-6`}>
       <div className="max-w-6xl mx-auto">
@@ -631,15 +722,7 @@ export default function TaskTracker() {
             </div>
 
             <button
-              onClick={() => {
-                setTasks([]);
-                setCompletedDates({});
-                setDayTasks({});
-                setDayTaskLocks({});
-                setCurrentStreak(0);
-                setLongestStreak(0);
-                setSelectedDate(new Date());
-              }}
+              onClick={handleLogout}
               className={`w-full px-4 py-2 rounded-lg transition font-semibold ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'}`}
             >
               Logout
