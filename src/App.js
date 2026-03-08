@@ -31,10 +31,8 @@ export default function TaskTracker() {
   // Check Firebase auth state and load data
   useEffect(() => {
     let unsubscribeListener = null;
-    let hasInitiallyLoaded = false;
     
     const unsubscribeAuth = onAuthStateChange((currentUser) => {
-      // Unsubscribe from previous listener if exists
       if (unsubscribeListener) {
         unsubscribeListener();
       }
@@ -42,35 +40,23 @@ export default function TaskTracker() {
       if (currentUser) {
         setUser(currentUser);
         setIsLoggedIn(true);
-        // Subscribe to real-time data updates
+        // Subscribe to real-time data updates - always update with what's in Firebase
         unsubscribeListener = subscribeToUserData(currentUser.uid, (data) => {
-          // Only update if we have data from Firestore
-          if (data && Object.keys(data).length > 0) {
+          if (data) {
             setTasks(data.tasks || []);
             setCompletedDates(data.completedDates || {});
             setDayTasks(data.dayTasks || {});
             setDayTaskLocks(data.dayTaskLocks || {});
-            hasInitiallyLoaded = true;
-          } else if (!hasInitiallyLoaded) {
-            // First time loading, check localStorage as fallback
-            const saved = localStorage.getItem('taskTrackerData');
-            if (saved) {
-              try {
-                const localData = JSON.parse(saved);
-                setTasks(localData.tasks || []);
-                setCompletedDates(localData.completedDates || {});
-                setDayTasks(localData.dayTasks || {});
-                setDayTaskLocks(localData.dayTaskLocks || {});
-              } catch (e) {
-                console.log('Could not load local data');
-              }
-            }
-            hasInitiallyLoaded = true;
           }
         });
       } else {
         setUser(null);
         setIsLoggedIn(false);
+        // Clear data on logout
+        setTasks([]);
+        setCompletedDates({});
+        setDayTasks({});
+        setDayTaskLocks({});
       }
     });
 
