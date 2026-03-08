@@ -30,12 +30,19 @@ export default function TaskTracker() {
 
   // Check Firebase auth state and load data
   useEffect(() => {
-    const unsubscribe = onAuthStateChange((currentUser) => {
+    let unsubscribeListener = null;
+    
+    const unsubscribeAuth = onAuthStateChange((currentUser) => {
+      // Unsubscribe from previous listener if exists
+      if (unsubscribeListener) {
+        unsubscribeListener();
+      }
+
       if (currentUser) {
         setUser(currentUser);
         setIsLoggedIn(true);
         // Subscribe to real-time data updates
-        subscribeToUserData(currentUser.uid, (data) => {
+        unsubscribeListener = subscribeToUserData(currentUser.uid, (data) => {
           if (data) {
             setTasks(data.tasks || []);
             setCompletedDates(data.completedDates || {});
@@ -48,7 +55,13 @@ export default function TaskTracker() {
         setIsLoggedIn(false);
       }
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeListener) {
+        unsubscribeListener();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -78,10 +91,10 @@ export default function TaskTracker() {
         dayTaskLocks,
         lastUpdated: new Date().toISOString()
       });
-    }, 2000); // Wait 2 seconds after last change before saving
+    }, 1000);
 
     return () => clearTimeout(timer);
-  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn]);
+  }, [tasks, completedDates, dayTasks, dayTaskLocks, user, isLoggedIn];
 
   const handleLogin = async (e) => {
     e.preventDefault();
