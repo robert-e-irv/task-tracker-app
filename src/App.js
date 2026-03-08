@@ -31,6 +31,7 @@ export default function TaskTracker() {
   // Check Firebase auth state and load data
   useEffect(() => {
     let unsubscribeListener = null;
+    let hasInitiallyLoaded = false;
     
     const unsubscribeAuth = onAuthStateChange((currentUser) => {
       // Unsubscribe from previous listener if exists
@@ -43,11 +44,28 @@ export default function TaskTracker() {
         setIsLoggedIn(true);
         // Subscribe to real-time data updates
         unsubscribeListener = subscribeToUserData(currentUser.uid, (data) => {
-          if (data) {
+          // Only update if we have data from Firestore
+          if (data && Object.keys(data).length > 0) {
             setTasks(data.tasks || []);
             setCompletedDates(data.completedDates || {});
             setDayTasks(data.dayTasks || {});
             setDayTaskLocks(data.dayTaskLocks || {});
+            hasInitiallyLoaded = true;
+          } else if (!hasInitiallyLoaded) {
+            // First time loading, check localStorage as fallback
+            const saved = localStorage.getItem('taskTrackerData');
+            if (saved) {
+              try {
+                const localData = JSON.parse(saved);
+                setTasks(localData.tasks || []);
+                setCompletedDates(localData.completedDates || {});
+                setDayTasks(localData.dayTasks || {});
+                setDayTaskLocks(localData.dayTaskLocks || {});
+              } catch (e) {
+                console.log('Could not load local data');
+              }
+            }
+            hasInitiallyLoaded = true;
           }
         });
       } else {
